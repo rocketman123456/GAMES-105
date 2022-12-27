@@ -1,0 +1,6 @@
+[submodule "data/LaFAN"]
+	path = data/LaFAN
+	url = https://github.com/ubisoft/ubisoft-laforge-animation-dataset
+[submodule "data/SFU-Mocap"]
+	path = data/SFU-Mocap
+	url = https://github.com/ubisoft/ubisoft-laforge-animation-dataset
