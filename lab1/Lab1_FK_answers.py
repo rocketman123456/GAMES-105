@@ -104,6 +104,7 @@ def part2_forward_kinematics(joint_name, joint_parent, joint_offset, motion_data
             joint_positions.append(frame_data[0])
             joint_orientations.append(quaternion[0])
         else:
+            # calculate global rotation and postion
             quat = R.from_quat(quaternion)
             rotation = R.as_quat(quat[index] * quat[parent])
             joint_orientations.append(rotation)
@@ -127,5 +128,45 @@ def part3_retarget_func(T_pose_bvh_path, A_pose_bvh_path):
         两个bvh的joint name顺序可能不一致哦(
         as_euler时也需要大写的XYZ
     """
-    motion_data = None
+    motion_data = []
+    # motion_dict = {}
+    # joint_remove_A = []
+    # joint_remove_T = []
+
+    # joint_name_T, joint_parent_T, joint_offset_T = part1_calculate_T_pose(T_pose_bvh_path)
+    # joint_name_A, joint_parent_A, joint_offset_A = part1_calculate_T_pose(A_pose_bvh_path)
+    # motion_data_A = load_motion_data(A_pose_bvh_path)
+    # # motion_shape_A = motion_data_A.shape
+
+    # root_position = motion_data_A[:, :3]
+    # motion_data_A = motion_data_A[:, 3:]
+    # motion_data = np.zeros(motion_data_A.shape)
+    # # print(root_position.shape)
+    # # print((motion_data_A[1]).reshape(-1,3))
+    # # exit()
+
+    # for i in joint_name_A:
+    #     if "_end" not in i:
+    #         joint_remove_A.append(i)
+
+    # for i in joint_name_T:
+    #     if "_end" not in i:
+    #         joint_remove_T.append(i)
+
+    # for index, name in enumerate(joint_remove_A):
+    #     motion_dict[name] = motion_data_A[:, 3*index:3*(index+1)]
+
+    # # print(motion_dict)
+    # # exit()
+    # for index, name in enumerate(joint_remove_T):
+    #     if name == "lShoulder":
+    #         motion_dict[name][:, 2] -= 45
+    #     elif name == "rShoulder":
+    #         motion_dict[name][:, 2] += 45
+    #     motion_data[:, 3*index:3*(index+1)] = motion_dict[name]
+    # # print(motion_dict)
+
+    # motion_data = np.concatenate([root_position, motion_data], axis=1)
+    # # print((motion_data[0]).reshape(-1,3))
+    # # print(motion_data[0])
     return motion_data
