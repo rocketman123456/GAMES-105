@@ -37,7 +37,7 @@ def part1_calculate_T_pose(bvh_file_path):
     joint_offset = []
 
     lines = []
-    joint_stack_list = []
+    joint_stack = []
     my_joint_dict = {}
 
     # read file
@@ -54,30 +54,23 @@ def part1_calculate_T_pose(bvh_file_path):
         elif line[0] == "CHANNELS":
             joint_channel_count.append(int(line[1]))
             joint_channel.append(line[2:len(line)])
-        elif line[0] == "ROOT" or line[0] == "JOINT":
+        elif line[0] == "ROOT":
             joint_name.append(line[-1])
+            joint_parent.append(-1)
+        elif line[0] == "JOINT":
+            joint_name.append(line[-1])
+            joint_parent.append(joint_name.index(joint_stack[-1]))
         elif line[0] == "End":
             joint_name.append(joint_name[-1]+"_end")
+            joint_parent.append(joint_name.index(joint_stack[-1]))
         elif line[0] == "OFFSET":
             joint_offset.append([float(line[1]), float(line[2]), float(line[3])])
         elif line[0] == "{":
-            joint_stack_list.append(joint_name[-1])
+            joint_stack.append(joint_name[-1])
         elif line[0] == "}":
-            joint_index = joint_stack_list.pop()
-            if joint_stack_list == []:
-                continue
-            else:
-                my_joint_dict[joint_index] = joint_stack_list[-1]
-    # build parent index
-    for i in joint_name:
-        if i == "RootJoint":
-            joint_parent.append(-1)
-        else:
-            joint_parent_name = my_joint_dict[i]
-            joint_parent.append(joint_name.index(joint_parent_name))
+            joint_stack.pop()
+
     joint_offset = np.array(joint_offset).reshape(-1, 3)
-    # print(joint_name)
-    # print(joint_parent)
     return joint_name, joint_parent, joint_offset
 
 
@@ -111,7 +104,7 @@ def part2_forward_kinematics(joint_name, joint_parent, joint_offset, motion_data
         quaternion = np.insert(quaternion, i, [0,0,0,1], axis=0)
 
     for index, parent in enumerate(joint_parent):
-        if parent==-1:
+        if parent == -1:
             joint_positions.append(frame_data[0])
             joint_orientations.append(quaternion[0])
         else:
