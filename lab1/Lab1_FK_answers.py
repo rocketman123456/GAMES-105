@@ -32,32 +32,43 @@ def part1_calculate_T_pose(bvh_file_path):
     """
     joint_name = []
     joint_parent = []
-    joint_stack_list = []
+    joint_channel_count = []
+    joint_channel = []
     joint_offset = []
+
+    lines = []
+    joint_stack_list = []
     my_joint_dict = {}
 
+    # read file
     with open(bvh_file_path, 'r') as f:
         lines = f.readlines()
-        for i in range(len(lines)):
-            line = [name for name in lines[i].split()]
-            if line[0] == "HIERARCHY":
+
+    #parse file
+    for i in range(len(lines)):
+        line = [name for name in lines[i].split()]
+        if line[0] == "HIERARCHY":
+            continue
+        elif line[0] == "MOTION":
+            break
+        elif line[0] == "CHANNELS":
+            joint_channel_count.append(int(line[1]))
+            joint_channel.append(line[2:len(line)])
+        elif line[0] == "ROOT" or line[0] == "JOINT":
+            joint_name.append(line[-1])
+        elif line[0] == "End":
+            joint_name.append(joint_name[-1]+"_end")
+        elif line[0] == "OFFSET":
+            joint_offset.append([float(line[1]), float(line[2]), float(line[3])])
+        elif line[0] == "{":
+            joint_stack_list.append(joint_name[-1])
+        elif line[0] == "}":
+            joint_index = joint_stack_list.pop()
+            if joint_stack_list == []:
                 continue
-            if line[0] == "MOTION":
-                break
-            if line[0] == "ROOT" or line[0] == "JOINT":
-                joint_name.append(line[-1])
-                joint_stack_list.append(line[-1])
-            if line[0] == "End":
-                joint_name.append(joint_name[-1]+"_end")
-                joint_stack_list.append(joint_name[-1])
-            if line[0] == "OFFSET":
-                joint_offset.append([float(line[1]), float(line[2]), float(line[3])])
-            if line[0] == "}":
-                joint_index = joint_stack_list.pop()
-                if joint_stack_list == []:
-                    continue
-                else:
-                    my_joint_dict[joint_index] = joint_stack_list[-1]
+            else:
+                my_joint_dict[joint_index] = joint_stack_list[-1]
+    # build parent index
     for i in joint_name:
         if i == "RootJoint":
             joint_parent.append(-1)
@@ -129,44 +140,35 @@ def part3_retarget_func(T_pose_bvh_path, A_pose_bvh_path):
         as_euler时也需要大写的XYZ
     """
     motion_data = []
-    # motion_dict = {}
-    # joint_remove_A = []
-    # joint_remove_T = []
+    motion_dict = {}
+    joint_remove_A = []
+    joint_remove_T = []
 
-    # joint_name_T, joint_parent_T, joint_offset_T = part1_calculate_T_pose(T_pose_bvh_path)
-    # joint_name_A, joint_parent_A, joint_offset_A = part1_calculate_T_pose(A_pose_bvh_path)
-    # motion_data_A = load_motion_data(A_pose_bvh_path)
-    # # motion_shape_A = motion_data_A.shape
+    joint_name_T, joint_parent_T, joint_offset_T = part1_calculate_T_pose(T_pose_bvh_path)
+    joint_name_A, joint_parent_A, joint_offset_A = part1_calculate_T_pose(A_pose_bvh_path)
+    motion_data_A = load_motion_data(A_pose_bvh_path)
 
-    # root_position = motion_data_A[:, :3]
-    # motion_data_A = motion_data_A[:, 3:]
-    # motion_data = np.zeros(motion_data_A.shape)
-    # # print(root_position.shape)
-    # # print((motion_data_A[1]).reshape(-1,3))
-    # # exit()
+    root_position = motion_data_A[:, :3]
+    motion_data_A = motion_data_A[:, 3:]
+    motion_data = np.zeros(motion_data_A.shape)
 
-    # for i in joint_name_A:
-    #     if "_end" not in i:
-    #         joint_remove_A.append(i)
+    for i in joint_name_A:
+        if "_end" not in i:
+            joint_remove_A.append(i)
 
-    # for i in joint_name_T:
-    #     if "_end" not in i:
-    #         joint_remove_T.append(i)
+    for i in joint_name_T:
+        if "_end" not in i:
+            joint_remove_T.append(i)
 
-    # for index, name in enumerate(joint_remove_A):
-    #     motion_dict[name] = motion_data_A[:, 3*index:3*(index+1)]
+    for index, name in enumerate(joint_remove_A):
+        motion_dict[name] = motion_data_A[:, 3*index:3*(index+1)]
 
-    # # print(motion_dict)
-    # # exit()
-    # for index, name in enumerate(joint_remove_T):
-    #     if name == "lShoulder":
-    #         motion_dict[name][:, 2] -= 45
-    #     elif name == "rShoulder":
-    #         motion_dict[name][:, 2] += 45
-    #     motion_data[:, 3*index:3*(index+1)] = motion_dict[name]
-    # # print(motion_dict)
+    for index, name in enumerate(joint_remove_T):
+        if name == "lShoulder":
+            motion_dict[name][:, 2] -= 45
+        elif name == "rShoulder":
+            motion_dict[name][:, 2] += 45
+        motion_data[:, 3*index:3*(index+1)] = motion_dict[name]
 
-    # motion_data = np.concatenate([root_position, motion_data], axis=1)
-    # # print((motion_data[0]).reshape(-1,3))
-    # # print(motion_data[0])
+    motion_data = np.concatenate([root_position, motion_data], axis=1)
     return motion_data
