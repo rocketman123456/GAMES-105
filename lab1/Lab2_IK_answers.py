@@ -139,31 +139,22 @@ def calculateJacobian(end_position, joint_angle, path_positions, path_orientatio
     print("----")
     print(end_position)
     print("----")
-    
-    # spcial for 0
-    # print(path_positions[0], joint_angle[0])
-    current_position = path_positions[0]
-    current_angle = joint_angle[0]
-    r = end_position - current_position
-    rx = R.from_euler('XYZ', [current_angle[0],  0, 0], degrees=True)
-    rxy = R.from_euler('XYZ', [current_angle[0],  current_angle[1], 0], degrees=True)
-    ax = np.array([1, 0, 0]).reshape(-1, 3)
-    ay = rx.apply(np.array([0., 1., 0.]).reshape(-1, 3))
-    az = rxy.apply(np.array([0., 0., 1.]).reshape(-1, 3))
-    jacobian.append(np.cross(ax, r))
-    jacobian.append(np.cross(ay, r))
-    jacobian.append(np.cross(az, r))
-    
-    for i in range(len(joint_angle) - 1):
+
+    for i in range(len(joint_angle)):
         # print(path_positions[i], joint_angle[i+1])
-        current_position = path_positions[i+1]
-        current_angle = joint_angle[i+1]
+        current_position = path_positions[i]
+        current_angle = joint_angle[i]
         r = current_position - end_position
         rx = R.from_euler('XYZ', [current_angle[0],  0., 0.], degrees=True)
         rxy = R.from_euler('XYZ', [current_angle[0],  current_angle[1], 0.], degrees=True)
-        ax = path_orientations[i].apply(np.array([1., 0., 0.]).reshape(-1, 3))
-        ay = path_orientations[i].apply(rx.apply(np.array([0., 1., 0.]).reshape(-1, 3)))
-        az = path_orientations[i].apply(rxy.apply(np.array([0., 0., 1.]).reshape(-1, 3)))
+        q_prev = None
+        if i == 0:
+            q_prev = R.from_quat([ 0. , 0.80976237, 0.53984158, -0.22990426])
+        else:
+            q_prev = path_orientations[i-1]
+        ax = q_prev.apply(np.array([1., 0., 0.]).reshape(-1, 3))
+        ay = q_prev.apply(rx.apply(np.array([0., 1., 0.]).reshape(-1, 3)))
+        az = q_prev.apply(rxy.apply(np.array([0., 0., 1.]).reshape(-1, 3)))
         jacobian.append(np.cross(ax, r))
         jacobian.append(np.cross(ay, r))
         jacobian.append(np.cross(az, r))
@@ -181,7 +172,7 @@ def calculateJointPathInJacobian(theta, end_index, path_offsets, path_positions,
     print(end_index, len(path_positions), len(path_rotations))
 
     # update joint rotations R_{i} = Q_{i-1}^T Q_{i}
-    path_orientations[0] = path_rotations[0]
+    # path_orientations[0] = path_rotations[0]
     for j in range(end_index):
         path_positions[j + 1] = path_positions[j] + path_orientations[j].apply(path_offsets[j + 1])
         if j + 1 < end_index:
@@ -210,10 +201,10 @@ def gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
         # theta_i+1 = theta_i - alpha J^T delta 
         delta = alpha * np.dot(jacobian.transpose(), delta)
 
-        print(theta.transpose())
-        print(theta.shape)
-        print(delta.transpose())
-        print(delta.shape)
+        # print(theta.transpose())
+        # print(theta.shape)
+        # print(delta.transpose())
+        # print(delta.shape)
 
         theta = theta - delta
 
@@ -360,7 +351,7 @@ def part2_inverse_kinematics(meta_data, joint_positions, joint_orientations, rel
     输入lWrist相对于RootJoint前进方向的xz偏移，以及目标高度，IK以外的部分与bvh一致
     """
     target_pose = np.array([joint_positions[0][0] + relative_x, target_height, joint_positions[0][2] + relative_z])
-    path_positions, path_orientations = gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
+    path_positions, path_orientations = cyclicCoordinateDescent(meta_data, joint_positions, joint_orientations, target_pose)
     joint_positions, joint_orientations = applyJointIKToAll(meta_data, joint_positions, joint_orientations, path_positions, path_orientations)
 
     return joint_positions, joint_orientations
