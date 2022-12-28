@@ -38,7 +38,6 @@ def part1_calculate_T_pose(bvh_file_path):
 
     lines = []
     joint_stack = []
-    my_joint_dict = {}
 
     # read file
     with open(bvh_file_path, 'r') as f:
@@ -69,7 +68,6 @@ def part1_calculate_T_pose(bvh_file_path):
             joint_stack.append(joint_name[-1])
         elif line[0] == "}":
             joint_stack.pop()
-
     joint_offset = np.array(joint_offset).reshape(-1, 3)
     return joint_name, joint_parent, joint_offset
 
@@ -109,8 +107,12 @@ def part2_forward_kinematics(joint_name, joint_parent, joint_offset, motion_data
             joint_orientations.append(quaternion[0])
         else:
             # calculate global rotation and postion
-            quat = R.from_quat(quaternion)
-            rotation = R.as_quat(quat[index] * quat[parent])
+            # Q_{i} = Q_{i-1} R_{i}
+            # p_{i+1} = p_{i} + Q_{i} l_{i}
+            quat_i = R.from_quat(quaternion[index])
+            quat_p = R.from_quat(quaternion[parent])
+            # quat = R.from_quat(quaternion)
+            rotation = R.as_quat(quat_i * quat_p) # q_{2} q_{1} [v] (q_{2} q_{1})^* : combine rotation
             joint_orientations.append(rotation)
             joint_orientations_quat = R.from_quat(joint_orientations)
 
@@ -157,6 +159,7 @@ def part3_retarget_func(T_pose_bvh_path, A_pose_bvh_path):
         motion_dict[name] = motion_data_A[:, 3*index:3*(index+1)]
 
     for index, name in enumerate(joint_remove_T):
+        # simple convert from A pose to T pose
         if name == "lShoulder":
             motion_dict[name][:, 2] -= 45
         elif name == "rShoulder":
