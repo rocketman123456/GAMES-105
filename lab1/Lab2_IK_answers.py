@@ -136,16 +136,34 @@ def calculateJacobian(end_position, joint_angle, path_positions, path_orientatio
     # i'th column = a_{i} x r{i}
     # for XYZ ball joint, use Euler angle to decomposite: R = Rx Ry Rz
     jacobian = []
-
-    for i in range(len(joint_angle)):
-        current_position = path_positions[i]
-        current_angle = joint_angle[i]
-        r = end_position - current_position
-        rx = R.from_euler('XYZ', [current_angle[0],  0, 0], degrees=True)
-        rxy = R.from_euler('XYZ', [current_angle[0],  current_angle[1], 0], degrees=True)
-        ax = path_orientations[i].apply(np.array([1, 0, 0]).reshape(-1, 3))
-        ay = path_orientations[i].apply(rx.apply(np.array([0, 1, 0]).reshape(-1, 3)))
-        az = path_orientations[i].apply(rxy.apply(np.array([0, 0, 1]).reshape(-1, 3)))
+    print("----")
+    print(end_position)
+    print("----")
+    
+    # spcial for 0
+    # print(path_positions[0], joint_angle[0])
+    current_position = path_positions[0]
+    current_angle = joint_angle[0]
+    r = end_position - current_position
+    rx = R.from_euler('XYZ', [current_angle[0],  0, 0], degrees=True)
+    rxy = R.from_euler('XYZ', [current_angle[0],  current_angle[1], 0], degrees=True)
+    ax = np.array([1, 0, 0]).reshape(-1, 3)
+    ay = rx.apply(np.array([0., 1., 0.]).reshape(-1, 3))
+    az = rxy.apply(np.array([0., 0., 1.]).reshape(-1, 3))
+    jacobian.append(np.cross(ax, r))
+    jacobian.append(np.cross(ay, r))
+    jacobian.append(np.cross(az, r))
+    
+    for i in range(len(joint_angle) - 1):
+        # print(path_positions[i], joint_angle[i+1])
+        current_position = path_positions[i+1]
+        current_angle = joint_angle[i+1]
+        r = current_position - end_position
+        rx = R.from_euler('XYZ', [current_angle[0],  0., 0.], degrees=True)
+        rxy = R.from_euler('XYZ', [current_angle[0],  current_angle[1], 0.], degrees=True)
+        ax = path_orientations[i].apply(np.array([1., 0., 0.]).reshape(-1, 3))
+        ay = path_orientations[i].apply(rx.apply(np.array([0., 1., 0.]).reshape(-1, 3)))
+        az = path_orientations[i].apply(rxy.apply(np.array([0., 0., 1.]).reshape(-1, 3)))
         jacobian.append(np.cross(ax, r))
         jacobian.append(np.cross(ay, r))
         jacobian.append(np.cross(az, r))
@@ -160,7 +178,10 @@ def calculateJointPathInJacobian(theta, end_index, path_offsets, path_positions,
         eula = theta[i]
         path_rotations.append(R.from_euler('XYZ', eula, degrees=True))
 
+    print(end_index, len(path_positions), len(path_rotations))
+
     # update joint rotations R_{i} = Q_{i-1}^T Q_{i}
+    path_orientations[0] = path_rotations[0]
     for j in range(end_index):
         path_positions[j + 1] = path_positions[j] + path_orientations[j].apply(path_offsets[j + 1])
         if j + 1 < end_index:
@@ -176,8 +197,8 @@ def gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
 
     end_index = meta_data.path_name.index(meta_data.end_joint)
     count = 0
-    alpha = 20
-    while (np.linalg.norm(joint_positions[meta_data.path[end_index]] - target_pose) >= 1e-2 and count <= 20):
+    alpha = 16
+    while (np.linalg.norm(joint_positions[meta_data.path[end_index]] - target_pose) >= 1e-2 and count <= 10):
         end_position = path_positions[end_index]
         joint_angle = calculateJointAngle(path_orientations)
         jacobian = calculateJacobian(end_position, joint_angle, path_positions, path_orientations)
@@ -188,7 +209,13 @@ def gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
 
         # theta_i+1 = theta_i - alpha J^T delta 
         delta = alpha * np.dot(jacobian.transpose(), delta)
-        theta = theta + delta
+
+        print(theta.transpose())
+        print(theta.shape)
+        print(delta.transpose())
+        print(delta.shape)
+
+        theta = theta - delta
 
         # convert theta back to rotations
         path_positions, path_orientations = calculateJointPathInJacobian(theta, end_index, path_offsets, path_positions, path_orientations)
@@ -219,7 +246,7 @@ def gaussNewtonMethod(meta_data, joint_positions, joint_orientations, target_pos
         temp = np.linalg.inv(np.dot(jacobian, jacobian.transpose()))
         temp = np.dot(jacobian.transpose(), temp)
         delta = alpha * np.dot(temp, delta)
-        theta = theta + delta
+        theta = theta - delta
 
         # convert theta back to rotations
         path_positions, path_orientations = calculateJointPathInJacobian(theta, end_index, path_offsets, path_positions, path_orientations)
@@ -253,7 +280,7 @@ def dampedGaussNewtonMethod(meta_data, joint_positions, joint_orientations, targ
         temp = np.linalg.inv(temp_1)
         temp = np.dot(jacobian.transpose(), temp)
         delta = alpha * np.dot(temp, delta)
-        theta = theta + delta
+        theta = theta - delta
 
         # convert theta back to rotations
         path_positions, path_orientations = calculateJointPathInJacobian(theta, end_index, path_offsets, path_positions, path_orientations)

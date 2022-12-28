@@ -87,6 +87,7 @@ def part2(viewer, bvh_name):
     joint_name, _, joint_initial_position = viewer.get_meta_data()
     idx = [joint_name.index(name) for name in bvh_joint_name]
     meta_data = MetaData(bvh_joint_name, bvh_joint_parent, joint_initial_position[idx], 'lShoulder', 'lWrist')
+    # meta_data = MetaData(bvh_joint_name, bvh_joint_parent, joint_initial_position[idx], 'RootJoint', 'lWrist')
     class UpdateHandle:
         def __init__(self, meta_data, motion_data, joint_offset):
             self.meta_data = meta_data
@@ -141,9 +142,9 @@ def main():
     viewer = SimpleViewer()
 
     # part1
-    part1_simple(viewer, np.array([0.5, 0.75, 0.5]))
+    # part1_simple(viewer, np.array([0.5, 0.75, 0.5]))
     # part1_hard(viewer, np.array([0.5, 0.5, 0.5]))
-    # part1_animation(viewer, np.array([0.5, 0.5, 0.5]))
+    part1_animation(viewer, np.array([0.5, 0.5, 0.5]))
 
     # part2
     # part2_one_pose(viewer, 'data/walk60.bvh', np.array([0.5, 0.75, 0.5]))
