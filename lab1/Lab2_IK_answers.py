@@ -223,7 +223,7 @@ def gaussNewtonMethod(meta_data, joint_positions, joint_orientations, target_pos
     end_index = meta_data.path_name.index(meta_data.end_joint)
     count = 0
     alpha = 15
-    while (np.linalg.norm(joint_positions[meta_data.path[end_index]] - target_pose) >= 1e-2 and count <= 15):
+    while (np.linalg.norm(path_positions[end_index] - target_pose) >= 1e-2 and count <= 15):
         end_position = path_positions[end_index]
         joint_angle = calculateJointAngle(path_orientations)
         jacobian = calculateJacobian(end_position, joint_angle, path_positions, path_orientations)
@@ -259,7 +259,7 @@ def dampedGaussNewtonMethod(meta_data, joint_positions, joint_orientations, targ
     end_index = meta_data.path_name.index(meta_data.end_joint)
     count = 0
     lambda_ = 1e-5
-    while (np.linalg.norm(joint_positions[meta_data.path[end_index]] - target_pose) >= 1e-2 and count <= 10):
+    while (np.linalg.norm(path_positions[end_index] - target_pose) >= 1e-2 and count <= 10):
         end_position = path_positions[end_index]
         joint_angle = calculateJointAngle(path_orientations)
         jacobian = calculateJacobian(end_position, joint_angle, path_positions, path_orientations)
@@ -449,12 +449,12 @@ def bonus_inverse_kinematics(meta_data, joint_positions, joint_orientations, lef
     count = 0
     while count < 10:
         # left target
-        meta_data_l = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'RootJoint', 'lWrist_end')
+        meta_data_l = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'lToeJoint_end', 'lWrist_end')
         path_positions_l, path_orientations_l = gradientDescent(meta_data_l, joint_positions, joint_orientations, left_target_pose)
         joint_positions, joint_orientations = applyFullBodyIK(meta_data_l, joint_positions, joint_orientations, path_positions_l, path_orientations_l)
 
         # right target
-        meta_data_r = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'RootJoint', 'rWrist_end')
+        meta_data_r = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'lToeJoint_end', 'rWrist_end')
         path_positions_r, path_orientations_r = gradientDescent(meta_data_r, joint_positions, joint_orientations, right_target_pose)
         joint_positions, joint_orientations = applyFullBodyIK(meta_data_r, joint_positions, joint_orientations, path_positions_r, path_orientations_r)
 
