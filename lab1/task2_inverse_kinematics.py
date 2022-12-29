@@ -63,24 +63,6 @@ def part1_animation(viewer, target_pos):
     viewer.run()
 
 
-def part2_one_pose(viewer, bvh_name, target_pos):
-    """
-    完成part1_inverse_kinematics，我们将根节点设在**左脚部**，末端节点设在左手
-    """
-    joint_name, joint_parent, joint_offset = part1_calculate_T_pose(bvh_name)
-    motion_data = load_motion_data(bvh_name)
-    joint_positions, joint_orientations = part2_forward_kinematics(joint_name, joint_parent, joint_offset, motion_data, 0)
-    
-    meta_name, meta_parent, joint_initial_position = viewer.get_meta_data()
-    meta_data = MetaData(joint_name, joint_parent, joint_initial_position, 'lShoulder', 'lWrist')
-    joint_position, joint_orientation = part1_inverse_kinematics(meta_data, joint_positions, joint_orientations, target_pos)
-    # joint_positions, joint_orientations = part2_inverse_kinematics(meta_data, joint_positions, joint_orientations, 0.1, 0.3, 1.4)
-
-    viewer.show_pose(joint_name, joint_positions, joint_orientations)
-    viewer.run()
-    pass
-
-
 def part2(viewer, bvh_name):
     motion_data = load_motion_data(bvh_name)
     bvh_joint_name, bvh_joint_parent, bvh_offset = part1_calculate_T_pose(bvh_name)
@@ -99,6 +81,8 @@ def part2(viewer, bvh_name):
 
         def update_func(self, viewer):
             joint_position, joint_orientation = part2_forward_kinematics(self.joint_name, self.joint_parent, self.joint_offset, self.motion_data, self.current_frame)
+            # target_pose = np.array([joint_position[0][0] + 0.1, 1.4, joint_position[0][2] + 0.3])
+            # self.marker = viewer.create_marker(target_pose, [1, 0, 0, 1])
             joint_position, joint_orientation = part2_inverse_kinematics(self.meta_data, joint_position, joint_orientation, 0.1, 0.3, 1.4)
             viewer.show_pose(self.joint_name, joint_position, joint_orientation)
             self.current_frame = (self.current_frame + 1) % self.motion_data.shape[0]
@@ -142,13 +126,12 @@ def main():
     viewer = SimpleViewer()
 
     # part1
-    part1_simple(viewer, np.array([0.5, 0.75, 0.5]))
+    # part1_simple(viewer, np.array([0.5, 0.75, 0.5]))
     # part1_hard(viewer, np.array([0.5, 0.5, 0.5]))
     # part1_animation(viewer, np.array([0.5, 0.5, 0.5]))
 
     # part2
-    # part2_one_pose(viewer, 'data/walk60.bvh', np.array([0.5, 0.75, 0.5]))
-    # part2(viewer, 'data/walk60.bvh')
+    part2(viewer, 'data/walk60.bvh')
 
     # bonus
     # bonus(viewer, np.array([0.5, 0.5, 0.5]), np.array([0, 0.5, 0.5]))
