@@ -101,6 +101,7 @@ def cyclicCoordinateDescent(meta_data, joint_positions, joint_orientations, targ
 
             # 计算方位与位置
             path_orientations[current_index] = rotation_vector * path_orientations[current_index]
+            print(path_orientations[current_index])
             path_rotations = []
             path_rotations.append(path_orientations[0])
             # update joint rotations R_{i} = Q_{i-1}^T Q_{i}
@@ -281,7 +282,84 @@ def dampedGaussNewtonMethod(meta_data, joint_positions, joint_orientations, targ
     return path_positions, path_orientations
 
 
-def applyJointIKToAll(meta_data, joint_positions, joint_orientations, path_positions, path_orientations):
+def FABRIK(meta_data, joint_positions, joint_orientations, target_pose):
+    # 计算 inverse_kinematics 链的信息
+    path_offsets, path_positions, path_orientations = getJointPathInfo(meta_data, joint_positions, joint_orientations)
+
+    d = []
+    for offset in path_offsets:
+        d.append(np.linalg.norm(offset))
+
+    dist = np.linalg.norm(target_pose - path_positions[0])
+
+    # The distance between root and target
+    total_dist = sum(d)
+
+    if(dist > total_dist): # unreachable
+        # Check whether the target is within reach
+        print("unreachable")
+        for i in range(len(path_offsets) - 1):
+            # Find the distance ri between the target t and the joint
+            p = path_positions[i]
+            p_1 = path_positions[i+1]
+            r = np.linalg.norm(target_pose - p)
+            a = d[i] / r
+            p_1 = (1 - a) * p + a * target_pose
+            path_positions[i+1] = p_1
+    else:
+        # The target is reachable; thus, set as b the initial position of the joint p_{i}
+        print("reachable")
+        b = path_positions[0]
+        # Check whether the distance between the end effector pn and the target t is greater than a tolerance.
+        dif_a = np.linalg.norm(path_positions[-1] - target_pose)
+        count = 0
+        while dif_a > 0.01 and count < 10:
+            # STAGE 1: FORWARD REACHING
+            # Set the end effector pn as target t
+            path_positions[-1] = target_pose
+            for i in range(len(path_positions)-2, -1, -1):
+                # Find the distance ri between the new joint position pi+1 and the joint pi
+                p = path_positions[i]
+                p_1 = path_positions[i+1]
+                r = np.linalg.norm(p - p_1)
+                a = d[i] / r
+                # Find the new joint positions pi.
+                p = (1 - a) * p_1 + a * p
+                path_positions[i] = p
+            # STAGE 2: BACKWARD REACHING
+            # Set the root p1 its initial position.
+            path_positions[0] = b
+            for i in range(len(path_offsets) - 1):
+                # Find the distance ri between the target t and the joint
+                p = path_positions[i]
+                p_1 = path_positions[i+1]
+                r = np.linalg.norm(p_1 - p)
+                a = d[i] / r
+                p_1 = (1 - a) * p + a * p_1
+                path_positions[i+1] = p_1
+            dif_a = np.linalg.norm(path_positions[-1] - target_pose)
+            count += 1
+
+    # TODO : get path orientations
+    # for i in range(len(path_positions) - 1):
+    #     p = path_positions[i]
+    #     p_1 = path_positions[i+1]
+    #     current2end = p_1 - p
+    #     current2target = path_offsets[i]
+    #     rotation_radius = np.arccos(np.clip(np.dot(current2end, current2target), -1, 1))
+    #     current_axis = np.cross(current2end, current2target)
+    #     rotation_axis = current_axis / np.linalg.norm(current_axis)
+    #     rotation_vector = R.from_rotvec(-rotation_radius * rotation_axis)
+    #     path_orientations[i] = rotation_vector
+    #     # print(current2end, current2target, rotation_vector.as_quat())
+
+    # path_orientations[0] = R.from_quat([0, 0, 0, 1])
+    # path_orientations[-1] = R.from_quat([0, 0, 0, 1])
+
+    return path_positions, path_orientations
+
+
+def applyFullBodyIK(meta_data, joint_positions, joint_orientations, path_positions, path_orientations):
     # print(meta_data.path)
     # print(meta_data.path1)
     # print(meta_data.path2)
@@ -319,6 +397,7 @@ def applyJointIKToAll(meta_data, joint_positions, joint_orientations, path_posit
         if meta_data.joint_parent[i] == -1:
             continue
         if meta_data.joint_name[i] not in meta_data.path_name:
+            # print(joint_orientations[meta_data.joint_parent[i]])
             joint_positions[i] = joint_positions[meta_data.joint_parent[i]] + \
                 R.from_quat(joint_orientations[meta_data.joint_parent[i]]).apply(meta_data.joint_initial_position[i] - \
                 meta_data.joint_initial_position[meta_data.joint_parent[i]])
@@ -341,7 +420,7 @@ def part1_inverse_kinematics(meta_data, joint_positions, joint_orientations, tar
         joint_orientations: 计算得到的关节朝向，是一个numpy数组，shape为(M, 4)，M为关节数
     """
     path_positions, path_orientations = gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
-    joint_positions, joint_orientations = applyJointIKToAll(meta_data, joint_positions, joint_orientations, path_positions, path_orientations)
+    joint_positions, joint_orientations = applyFullBodyIK(meta_data, joint_positions, joint_orientations, path_positions, path_orientations)
 
     return joint_positions, joint_orientations
 
@@ -351,8 +430,8 @@ def part2_inverse_kinematics(meta_data, joint_positions, joint_orientations, rel
     输入lWrist相对于RootJoint前进方向的xz偏移，以及目标高度，IK以外的部分与bvh一致
     """
     target_pose = np.array([joint_positions[0][0] + relative_x, target_height, joint_positions[0][2] + relative_z])
-    path_positions, path_orientations = cyclicCoordinateDescent(meta_data, joint_positions, joint_orientations, target_pose)
-    joint_positions, joint_orientations = applyJointIKToAll(meta_data, joint_positions, joint_orientations, path_positions, path_orientations)
+    path_positions, path_orientations = gradientDescent(meta_data, joint_positions, joint_orientations, target_pose)
+    joint_positions, joint_orientations = applyFullBodyIK(meta_data, joint_positions, joint_orientations, path_positions, path_orientations)
 
     return joint_positions, joint_orientations
 
@@ -366,12 +445,12 @@ def bonus_inverse_kinematics(meta_data, joint_positions, joint_orientations, lef
         # left target
         meta_data_l = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'RootJoint', 'lWrist_end')
         path_positions_l, path_orientations_l = gradientDescent(meta_data_l, joint_positions, joint_orientations, left_target_pose)
-        joint_positions, joint_orientations = applyJointIKToAll(meta_data_l, joint_positions, joint_orientations, path_positions_l, path_orientations_l)
+        joint_positions, joint_orientations = applyFullBodyIK(meta_data_l, joint_positions, joint_orientations, path_positions_l, path_orientations_l)
 
         # right target
         meta_data_r = MetaData(meta_data.joint_name, meta_data.joint_parent, meta_data.joint_initial_position, 'RootJoint', 'rWrist_end')
         path_positions_r, path_orientations_r = gradientDescent(meta_data_r, joint_positions, joint_orientations, right_target_pose)
-        joint_positions, joint_orientations = applyJointIKToAll(meta_data_r, joint_positions, joint_orientations, path_positions_r, path_orientations_r)
+        joint_positions, joint_orientations = applyFullBodyIK(meta_data_r, joint_positions, joint_orientations, path_positions_r, path_orientations_r)
 
         count += 1
     

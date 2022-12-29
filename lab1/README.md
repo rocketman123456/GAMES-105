@@ -156,6 +156,10 @@ SFU-Mocap: https://github.com/ubisoft/ubisoft-laforge-animation-dataset
 
 如果正确完成了part1_inverse_kinematics，那么在`part1_animation`中不用做任何额外代码，就可以通过`wasd`控制marker的位置，来实时改变角色的姿态，以保持角色的左手始终与marker位置重合。
 
+ref1 [http://www.andreasaristidou.com/FABRIK.html](http://www.andreasaristidou.com/FABRIK.html)
+
+ref2 [https://www.youtube.com/watch?v=wjn19jBzJCE](https://www.youtube.com/watch?v=wjn19jBzJCE)
+
 ### Part 2: 逆向运动学+bvh
 
 输入一个bvh，要求角色的其他身体部分在按照bvh动作的同时，左手在水平方向上对根节点保持静止，竖直方向上维持同一个绝对高度。
