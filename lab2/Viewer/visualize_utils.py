@@ -1,5 +1,6 @@
 from panda3d.core import *
 import numpy as np
+
 def draw_circle(nodepath, radius, color):
     from direct.showutil.Rope import Rope
     r = Rope()
@@ -50,7 +51,6 @@ def draw_arrow(nodepath, width, length, color):
     node.setPos(0,0,length/2)
     node.wrtReparentTo(nodepath)
     return node
-
 
 def pos_vel_to_beizer(position, velocity, dt):
     position = position.reshape(-1,3)

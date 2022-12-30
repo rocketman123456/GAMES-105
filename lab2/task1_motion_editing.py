@@ -19,7 +19,7 @@ class ShowBVHUpdate():
         self.joint_name = joint_name
         self.translation = translation
         self.orientation = orientation
-        
+
     def update(self, task):
         if not self.viewer.update_flag:
             return task.cont
@@ -31,15 +31,14 @@ class ShowBVHUpdate():
                                                        self.orientation[self.cur_frame//speed_inv, i, :])
         self.cur_frame = (self.cur_frame + 1) % (self.translation.shape[0]*speed_inv)
         return task.cont
-    
+
 def part1_translation_and_rotation(viewer, setting_id):
-    
     # 一些不同的设置
     bvh_list = ['motion_material/walk_forward.bvh', 'motion_material/run_forward.bvh', 'motion_material/walk_and_turn_left.bvh']
     pos_xz_list = [np.array([-4,4]), np.array([2,4]), np.array([6,1])]
     facing_xz_list = [np.array([1,1]), np.array([5,1]), np.array([1,1])]
     frame_list = [0, -1, -1]
-    
+
     # 读取设置
     bvh = bvh_list[setting_id]
     pos = pos_xz_list[setting_id]
@@ -48,18 +47,17 @@ def part1_translation_and_rotation(viewer, setting_id):
 
     original_motion = BVHMotion(bvh)
     new_motion = original_motion.translation_and_rotation(frame, pos, facing_xz)
-    
+
     translation, orientation = new_motion.batch_forward_kinematics()
     task = ShowBVHUpdate(viewer, new_motion.joint_name, translation, orientation) 
     viewer.addTask(task.update)
-    
+
     # 画些参考点
     viewer.create_arrow(np.array([pos[0],1e-3,pos[1]]), facing_xz)
     viewer.create_marker(np.array([pos[0],0,pos[1]]) ,[0,1,0,1])
     return
 
 def part2_interpolate(viewer, v):
-    
     # 读取动作
     walk_forward = BVHMotion('motion_material/walk_forward.bvh')
     run_forward = BVHMotion('motion_material/run_forward.bvh')
@@ -100,7 +98,6 @@ def part3_build_loop(viewer):
     task = ShowBVHUpdate(viewer, motion.joint_name, translation, orientation)
     viewer.addTask(task.update)
 
-
 def part4_concatenate(viewer, setting_id):
     if setting_id == 0:
         walk_forward = BVHMotion('motion_material/walkF.bvh')
@@ -127,7 +124,6 @@ def part4_concatenate(viewer, setting_id):
     viewer.addTask(task.update)
     pass
 
-
 def main():
     viewer = SimpleViewer() # 暂时还用不着Controller
     viewer.show_axis_frame()
@@ -136,7 +132,7 @@ def main():
     # 请不要同时取消多个注释，否则前者会被后者覆盖
     
     part1_translation_and_rotation(viewer, 0) # 数字代表不同的测试setting
-    # part2_interpolate(viewer, 1) # 数字代表不同期望的前进速度
+    part2_interpolate(viewer, 1) # 数字代表不同期望的前进速度
     # part3_build_loop(viewer)
     # part4_concatenate(viewer, 0) # 数字代表不同的测试setting
     viewer.run()

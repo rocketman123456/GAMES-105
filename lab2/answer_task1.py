@@ -2,7 +2,9 @@ import numpy as np
 import copy
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Slerp
+
 # ------------- lab1里的代码 -------------#
+
 def load_meta_data(bvh_path):
     with open(bvh_path, 'r') as f:
         channels = []
@@ -122,7 +124,6 @@ class BVHMotion():
                 rotation = motion_data[:, cur_channel+3:cur_channel+6]
             self.joint_rotation[:, i, :] = R.from_euler('XYZ', rotation,degrees=True).as_quat()
             cur_channel += self.joint_channel[i]
-        
         return
 
     def batch_forward_kinematics(self, joint_position = None, joint_rotation = None):
@@ -150,8 +151,7 @@ class BVHMotion():
                 parent_orientation.apply(joint_position[:, i, :])
             joint_orientation[:, i, :] = (parent_orientation * R.from_quat(joint_rotation[:, i, :])).as_quat()
         return joint_translation, joint_orientation
-    
-    
+
     def adjust_joint_name(self, target_joint_name):
         '''
         调整关节顺序为target_joint_name
@@ -165,18 +165,17 @@ class BVHMotion():
         self.joint_position = self.joint_position[:,idx,:]
         self.joint_rotation = self.joint_rotation[:,idx,:]
         pass
-    
+
     def raw_copy(self):
         '''
         返回一个拷贝
         '''
         return copy.deepcopy(self)
-    
+
     @property
     def motion_length(self):
         return self.joint_position.shape[0]
-    
-    
+
     def sub_sequence(self, start, end):
         '''
         返回一个子序列
@@ -187,7 +186,7 @@ class BVHMotion():
         res.joint_position = res.joint_position[start:end,:,:]
         res.joint_rotation = res.joint_rotation[start:end,:,:]
         return res
-    
+
     def append(self, other):
         '''
         在末尾添加另一个动作
@@ -197,9 +196,8 @@ class BVHMotion():
         self.joint_position = np.concatenate((self.joint_position, other.joint_position), axis=0)
         self.joint_rotation = np.concatenate((self.joint_rotation, other.joint_rotation), axis=0)
         pass
-    
+
     #--------------------- 你的任务 -------------------- #
-    
     def decompose_rotation_with_yaxis(self, rotation):
         '''
         输入: rotation 形状为(4,)的ndarray, 四元数旋转
@@ -210,7 +208,7 @@ class BVHMotion():
         # TODO: 你的代码
         
         return Ry, Rxz
-    
+
     # part 1
     def translation_and_rotation(self, frame_num, target_translation_xz, target_facing_direction_xz):
         '''
@@ -263,7 +261,6 @@ def build_loop_motion(bvh_motion):
     Creating Looping Animations from Motion Capture
     '''
     res = bvh_motion.raw_copy()
-    
     from smooth_utils import build_loop_motion
     return build_loop_motion(res)
 
@@ -282,6 +279,5 @@ def concatenate_two_motions(bvh_motion1, bvh_motion2, mix_frame1, mix_time):
     # 下面这种直接拼肯定是不行的(
     res.joint_position = np.concatenate([res.joint_position[:mix_frame1], bvh_motion2.joint_position], axis=0)
     res.joint_rotation = np.concatenate([res.joint_rotation[:mix_frame1], bvh_motion2.joint_rotation], axis=0)
-    
     return res
 

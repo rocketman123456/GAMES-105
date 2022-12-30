@@ -43,8 +43,7 @@ class CameraCtrl(DirectObject):
         self.has_pad = False
         self.look()
         self._locked_info = (pc.LVector3(self.position), pc.LVector3(self.center), pc.LVector3(self.up))
-        
-        
+
     def look(self):    
         self.camera.setPos(self.position)
         self.camera.lookAt(self.center, self.up)
@@ -184,7 +183,7 @@ class CameraCtrl(DirectObject):
         self.look()
 
         return task.cont
-    
+
 class SimpleViewer(ShowBase):
     def __init__(self, fStartDirect=True, windowType=None):
         '''
@@ -222,7 +221,7 @@ class SimpleViewer(ShowBase):
     
     def receive_space(self):
         self.update_flag = not self.update_flag
-        
+
     def create_texture(self, color, name):
         img = pc.PNMImage(32,32)
         img.fill(*color[:3])
@@ -230,14 +229,14 @@ class SimpleViewer(ShowBase):
         tex = pc.Texture(name)
         tex.load(img)
         return tex
-        
+
     def load_ground(self):
         self.ground = self.loader.loadModel("material/GroundScene.egg")
         self.ground.reparentTo(self.render)
         self.ground.setScale(100, 1, 100)
         self.ground.setTexScale(pc.TextureStage.getDefault(), 50, 50)
         self.ground.setPos(0, -1, 0)
-        
+
     def setupCameraLight(self):
         # create a orbiting camera
         self.cameractrl = CameraCtrl(self, self.cam)
@@ -277,7 +276,6 @@ class SimpleViewer(ShowBase):
         self.render.setLight(directionalLightNP)
         self.d_lights.append(directionalLightNP)
         
-        
         # Directional light 03
         directionalLight = pc.DirectionalLight('directionalLight3')
         directionalLight.setColorTemperature(6500)        
@@ -295,7 +293,6 @@ class SimpleViewer(ShowBase):
 
         self.render.setShaderAuto(True)
 
-    
     def create_joint(self, link_id, position, end_effector=False):
         # create a joint
         box = self.loader.loadModel("material/GroundScene.egg")
@@ -310,7 +307,7 @@ class SimpleViewer(ShowBase):
         box.setScale(0.01,0.01,0.01)
         node.setPos(self.render, *position)
         return node
-    
+
     def create_link(self, link_id, position, scale, rot):
         # create a link
         box = self.loader.loadModel("material/GroundScene.egg")
@@ -326,7 +323,7 @@ class SimpleViewer(ShowBase):
         if rot is not None:
             node.setQuat(self.render, pc.Quat(*rot[[3,0,1,2]].tolist()))
         return node
-    
+
     def show_axis_frame(self):
         pose = [ [1,0,0], [0,1,0], [0,0,1] ]
         color = [ [1,0,0,1], [0,1,0,1], [0,0,1,1] ]
@@ -338,13 +335,12 @@ class SimpleViewer(ShowBase):
             box.setTextureOff(1)
             box.setTexture(tex,1)
             box.reparentTo(self.render)
-    
-    
+
     def update(self, task):
         if self.update_func and self.update_flag:
             self.update_func(self)
         return task.cont
-    
+
     def load_character(self):
         info = np.load('character_model.npy', allow_pickle=True).item()
         joint_pos = info['joint_pos']
@@ -390,31 +386,31 @@ class SimpleViewer(ShowBase):
     def get_joint_positions(self):
         pos = [joint.getPos(self.render) for joint in self.joints]
         return np.concatenate([pos], axis=0)
-    
+
     def get_joint_orientations(self):
         quat = [joint.getQuat(self.render) for joint in self.joints]
         return np.concatenate([quat], axis=0)[..., [1,2,3,0]]
-    
+
     def get_joint_position_by_name(self, name):
         pos = self.joints[self.name2idx[name]].getPos(self.render)
         return np.array(pos)
-    
+
     def get_joint_orientation_by_name(self, name):
         quat = self.joints[self.name2idx[name]].getQuat(self.render)
         return np.array(quat)[..., [1,2,3,0]]
-    
+
     def set_joint_position_by_name(self, name, pos):
         self.joints[self.name2idx[name]].setPos(self.render, *pos)
-    
+
     def set_joint_orientation_by_name(self, name, quat):
         self.joints[self.name2idx[name]].setQuat(self.render, pc.Quat(*quat[...,[3,0,1,2]].tolist()))
-    
+
     def set_joint_position_orientation(self, link_name, pos, quat):
         if not link_name in self.name2idx:
             return
         self.joints[self.name2idx[link_name]].setPos(self.render, *pos.tolist())
         self.joints[self.name2idx[link_name]].setQuat(self.render, pc.Quat(*quat[...,[3,0,1,2]].tolist()))
-    
+
     def show_pose(self, joint_name_list, joint_positions, joint_orientations):
         length = len(joint_name_list)
         assert joint_positions.shape == (length, 3)
@@ -422,6 +418,7 @@ class SimpleViewer(ShowBase):
         
         for i in range(length):
             self.set_joint_position_orientation(joint_name_list[i], joint_positions[i], joint_orientations[i])
+
     def show_rest_pose(self, joint_name, joint_parent, joint_offset):
         length = len(joint_name)
         joint_positions = np.zeros((length, 3), dtype=np.float64)
@@ -436,7 +433,7 @@ class SimpleViewer(ShowBase):
 
     def get_meta_data(self):
         return self.joint_name, self.parent_index, self.init_joint_pos
-    
+
     def move_marker(self, marker, x, y):
         
         if not self.update_marker_func:
@@ -450,10 +447,10 @@ class SimpleViewer(ShowBase):
         pos += x_axis * x + y_axis * y
         marker.setPos(self.render, *pos.tolist())
         self.update_marker_func(self)
-    
+
     def camera_fwd(self):
         return self.cameractrl.center - self.cameractrl.position
-    
+
     def create_marker(self, pos, color):
         self.update_marker_func = None
         marker = self.loader.loadModel("material/GroundScene.egg")
@@ -475,7 +472,7 @@ class SimpleViewer(ShowBase):
         self.accept('a-repeat', self.move_marker, [marker, -0.05, 0])
         self.accept('d-repeat', self.move_marker, [marker, 0.05, 0])
         return marker
-    
+
     def create_marker2(self, pos, color):
         self.update_marker_func = None
         marker = self.loader.loadModel("material/GroundScene.egg")
@@ -497,7 +494,7 @@ class SimpleViewer(ShowBase):
         self.accept('arrow_left-repeat', self.move_marker, [marker, -0.05, 0])
         self.accept('arrow_right-repeat', self.move_marker, [marker, 0.05, 0])
         return marker
-    
+
     def create_arrow(self, pos, forward_xz = np.array([0,1]), color = [1,0,0,0]):
         from .visualize_utils import draw_arrow
         arrow = self.render.attachNewNode("arrow")
@@ -511,4 +508,3 @@ class SimpleViewer(ShowBase):
         quat = pc.Quat(rot[3], rot[0], rot[1], rot[2])
         arrow.setQuat(quat)
         return arrow
-    

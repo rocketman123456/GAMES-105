@@ -83,8 +83,8 @@ def cyclicCoordinateDescent(meta_data, joint_positions, joint_orientations, targ
     cnt = 0
     end_index = meta_data.path_name.index(meta_data.end_joint)
     while (np.linalg.norm(joint_positions[meta_data.path[end_index]] - target_pose) >= 1e-2 and cnt <= 10):
-        for i in range(end_index - 1):
-            current_index = i + 1
+        for i in range(end_index):
+            current_index = i
             # current_index = end_index - i - 1
             current_position = path_positions[current_index]
             end_position = path_positions[end_index]
