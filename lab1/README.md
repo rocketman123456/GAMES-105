@@ -125,10 +125,17 @@ part1(viewer, bvh_file_path)
 ### Part 4(选做):任意BVH重定向
 在网络上有很多开源的BVH数据集，是由真人动作捕捉数据得到的。如LaFAN、SFU-Mocap数据集。
 
-```
+<!-- ```
 LaFAN: https://github.com/ubisoft/ubisoft-laforge-animation-dataset
 SFU-Mocap: https://github.com/ubisoft/ubisoft-laforge-animation-dataset
-```
+``` -->
+
+ 1. [CMU](https://sites.google.com/a/cgspeed.com/cgspeed/motion-capture/cmu-bvh-conversion)
+ 2. [Mixamo](https://www.mixamo.com/)
+ 3. [SFU Mocap](http://mocap.cs.sfu.ca/)
+ 4. [OHIO](https://accad.osu.edu/research/motion-lab/mocap-system-and-data)
+ 5. [DanceDB](http://dancedb.eu/main/performances)
+
 
 它们的节点和我们的有可能不一致，如果有兴趣还是可以将其进行重定向来进行播放使用的。
 
